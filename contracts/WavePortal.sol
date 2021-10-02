@@ -16,23 +16,55 @@ contract WavePortal {
 
     Wave[] waves;
 
-    constructor() {
-        console.log("Constructing!");
+    constructor() payable {
+        console.log("Constructed!");
     }
 
     function wave(string memory _message) public {
         totalWaves += 1;
+        console.log('%s has waved!', msg.sender);
+
         waves.push(Wave(msg.sender, _message, block.timestamp));
 
         emit NewWave(msg.sender, block.timestamp, _message);
+
+        // Send ETH to wavers
+        uint256 prizeAmount = 0.0001 ether;
+        require(
+            prizeAmount <= address(this).balance,
+            "Trying to withdraw more ether than the contract has."
+        );
+        (bool success,) = (msg.sender).call{value: prizeAmount}("");
+        require(success, "Failed to withdraw ether from contract.");
     }
 
     function getTotalWaves() public view returns (uint256) {
-        console.log("We have %d total waves!", totalWaves);
+        console.log("We have a total of %d waves!", totalWaves);
         return totalWaves;
     }
 
     function getAllWaves() public view returns (Wave[] memory) {
         return waves;
+    }
+
+    function getWavesPerAddress(address _address) public view returns (Wave[] memory) {
+        // Count the num of waves made by `_address`
+        uint256 count;
+        for (uint256 i = 0; i < totalWaves; i++) {
+            if (waves[i].waver == _address) {
+                count++;
+            }
+        }
+        // Create an array of `Wave` of length `count`
+        Wave[] memory awaves = new Wave[](count);
+        // Loop over `ẁaves` to populate the new array
+        uint256 j;
+        for (uint256 i = 0; i < totalWaves; i++) {
+            if (waves[i].waver == _address) {
+                awaves[j] = waves[i];
+                j++;
+            }
+        }
+        return awaves;
     }
 }
