@@ -6,7 +6,6 @@ import "hardhat/console.sol";
 contract WavePortal {
 
     uint256 private seed;
-
     uint256 totalWaves;
 
     event NewWave(address indexed from, uint256 timestamp, string message);
@@ -19,11 +18,22 @@ contract WavePortal {
 
     Wave[] waves;
 
+    mapping(address => uint256) public lastWavedAt;
+
     constructor() payable {
         console.log("Constructed!");
     }
 
     function wave(string memory _message) public {
+        // Require a minimum timelapse between messages of a same address
+        // to avoid spamming
+        require(
+            lastWavedAt[msg.sender] + 15 minutes < block.timestamp,
+            "Only one message every 15 minutes allowed."
+        );
+        lastWavedAt[msg.sender] = block.timestamp;
+
+        // Push the message
         totalWaves += 1;
         console.log('%s has waved!', msg.sender);
 
